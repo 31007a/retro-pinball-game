@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>經典彈珠台 V2</title>
-  <meta name="description" content="加入撞擊回饋、Combo 與 Overdrive 的彈珠台遊戲 ES6 模組化版本。">
+  <title>星際彈珠台 V3</title>
+  <meta name="description" content="具備 8-bit 科幻素材、Sprite Sheet 動畫、背景音樂與音效的模組化彈珠台遊戲。">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101827'/%3E%3Ccircle cx='32' cy='22' r='10' fill='%23ffd166'/%3E%3Cpath d='M14 48L29 38M50 48L35 38' stroke='%235eead4' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <main class="game-shell">
     <div class="topbar">
-      <h1>彈珠台 V2</h1>
+      <div>
+        <h1>星際彈珠台</h1>
+        <span class="subtitle">NEON ORBIT · V3</span>
+      </div>
       <div class="scoreboard" aria-live="polite">
         <div class="score-box">
           <span class="score-label">SCORE</span>
@@ -26,6 +29,10 @@
 
     <div class="board-wrap">
       <canvas id="game" width="520" height="780" aria-label="彈珠台遊戲區"></canvas>
+      <div class="audio-controls" aria-label="音訊控制">
+        <button class="icon-button" id="musicToggle" type="button" aria-pressed="true">♫ 音樂</button>
+        <button class="icon-button" id="sfxToggle" type="button" aria-pressed="true">✦ 音效</button>
+      </div>
       <div class="status-hud" aria-live="polite">
         <div class="status-badge" id="comboHud" hidden>COMBO x1</div>
         <div class="status-badge overdrive" id="overdriveHud" hidden>OVERDRIVE 5.0s</div>
@@ -36,6 +43,10 @@
           <p>本局得分：<strong id="finalScore">0</strong><br>按空白鍵再玩一次</p>
           <button id="restart" type="button">重新開始</button>
         </div>
+      </div>
+      <div class="loading-overlay" id="loadingOverlay">
+        <strong>LOADING ASSETS</strong>
+        <span>正在載入星際素材與音效…</span>
       </div>
     </div>
 
@@ -49,6 +60,7 @@
       1.5 秒內連續命中可提高 Combo，x5 啟動 Overdrive！<br>
       Game Over 後按 <kbd>空白鍵</kbd> 重新開始
     </p>
+    <p class="credit">製作人：陳學翰</p>
   </main>
 
   <script type="module" src="js/main.js"></script>

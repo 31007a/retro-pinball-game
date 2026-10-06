@@ -2,6 +2,33 @@
  * 彈珠台遊戲全域設定與物理常數
  */
 export const CONFIG = {
+  ASSETS: {
+    images: {
+      background: './assets/images/background.png',
+      player: './assets/images/player.png',
+      ball: './assets/images/ball.png',
+      bumper: './assets/images/bumper.png',
+      flipper: './assets/images/flipper.png',
+    },
+    audio: {
+      bgm: './assets/audio/bgm.mp3',
+      flipper: './assets/audio/flipper.wav',
+      hit: './assets/audio/hit.wav',
+      point: './assets/audio/point.wav',
+      gameover: './assets/audio/gameover.wav',
+    },
+  },
+  MASCOT: {
+    FRAME_COUNT: 8,
+    IDLE_FRAMES: [0, 1, 2, 3],
+    ATTACK_FRAMES: [4, 5, 6, 7],
+    IDLE_FPS: 4,
+    ATTACK_FPS: 12,
+    X: 260,
+    Y: 715,
+    WIDTH: 86,
+    HEIGHT: 128,
+  },
   CANVAS: {
     WIDTH: 520,
     HEIGHT: 780,

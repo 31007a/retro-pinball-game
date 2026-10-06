@@ -12,11 +12,12 @@ export class Entity {
 }
 
 export class Bumper extends Entity {
-  constructor(x, y, r, value = 100) {
+  constructor(x, y, r, value = 100, image = null) {
     super(x, y);
     this.r = r;
     this.value = value;
     this.hit = 0;
+    this.image = image;
   }
 
   reset() {
@@ -29,6 +30,15 @@ export class Bumper extends Entity {
 
   draw(ctx) {
     const pulse = this.hit * 7;
+    if (this.image) {
+      const size = (this.r + pulse * .18) * 2.2;
+      ctx.save();
+      ctx.shadowColor = this.hit ? '#ffffff' : '#42f5ff';
+      ctx.shadowBlur = 12 + pulse;
+      ctx.drawImage(this.image, this.x - size / 2, this.y - size / 2, size, size);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.shadowColor = this.hit ? '#ffffff' : '#ffd166';
     ctx.shadowBlur = 12 + pulse;
@@ -68,7 +78,7 @@ export class Post extends Entity {
 }
 
 export class Flipper extends Entity {
-  constructor(config) {
+  constructor(config, image = null) {
     super(config.pivotX, config.pivotY);
     this.pivotX = config.pivotX;
     this.pivotY = config.pivotY;
@@ -79,6 +89,7 @@ export class Flipper extends Entity {
     this.angle = config.rest;
     this.speedFactor = config.speedFactor || 22;
     this.isRight = Boolean(config.isRight);
+    this.image = image;
   }
 
   reset() {
@@ -99,6 +110,18 @@ export class Flipper extends Entity {
 
   draw(ctx) {
     const tip = this.getTip();
+    if (this.image) {
+      const visualHeight = this.radius * 2 + 12;
+      ctx.save();
+      ctx.translate(this.pivotX, this.pivotY);
+      ctx.rotate(this.angle);
+      ctx.imageSmoothingEnabled = true;
+      ctx.shadowColor = '#27deed';
+      ctx.shadowBlur = 8;
+      ctx.drawImage(this.image, -visualHeight * .45, -visualHeight / 2, this.length + visualHeight * .65, visualHeight);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.strokeStyle = '#57e6db';
     ctx.lineWidth = this.radius * 2;

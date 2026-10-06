@@ -11,6 +11,8 @@ export class HUD {
     this.comboHud = document.getElementById('comboHud');
     this.overdriveHud = document.getElementById('overdriveHud');
     this.boardWrap = document.querySelector('.board-wrap');
+    this.musicToggle = document.getElementById('musicToggle');
+    this.sfxToggle = document.getElementById('sfxToggle');
   }
 
   updateScore(score, highScore) {
@@ -63,5 +65,18 @@ export class HUD {
     if (this.restartBtn) {
       this.restartBtn.addEventListener('click', handler);
     }
+  }
+
+  bindAudioControls({ onMusic, onSfx }) {
+    this.musicToggle?.addEventListener('click', () => {
+      const enabled = onMusic();
+      this.musicToggle.setAttribute('aria-pressed', String(enabled));
+      this.musicToggle.textContent = enabled ? '♫ 音樂' : '♫ 靜音';
+    });
+    this.sfxToggle?.addEventListener('click', () => {
+      const enabled = onSfx();
+      this.sfxToggle.setAttribute('aria-pressed', String(enabled));
+      this.sfxToggle.textContent = enabled ? '✦ 音效' : '✦ 靜音';
+    });
   }
 }

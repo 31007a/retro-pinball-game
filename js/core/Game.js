@@ -6,12 +6,14 @@ import { Player } from '../entities/Player.js';
 import { Bumper, Post, Flipper } from '../entities/Entity.js';
 import { Physics } from '../systems/Physics.js';
 import { ParticleSystem } from '../systems/ParticleSystem.js';
+import { AudioManager } from '../systems/AudioManager.js';
+import { Mascot } from '../entities/Mascot.js';
 
 /**
  * 彈珠台主遊戲控制類別
  */
 export class Game {
-  constructor() {
+  constructor(assets) {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
     this.width = CONFIG.CANVAS.WIDTH;
@@ -28,29 +30,42 @@ export class Game {
     this.shakeTime = 0;
     this.shakeMagnitude = 0;
 
-    this.audioContext = null;
+    this.assets = assets;
+    this.audio = new AudioManager(assets.audio);
+    this.collisionSoundCooldown = 0;
 
     // 實體初始化
-    this.player = new Player(CONFIG.BALL_INIT);
-    this.bumpers = CONFIG.BUMPERS.map(b => new Bumper(b.x, b.y, b.r, b.value));
+    this.player = new Player(CONFIG.BALL_INIT, assets.images.ball);
+    this.bumpers = CONFIG.BUMPERS.map(b => new Bumper(b.x, b.y, b.r, b.value, assets.images.bumper));
     this.posts = CONFIG.POSTS.map(p => new Post(p.x, p.y, p.r));
-    this.leftFlipper = new Flipper(CONFIG.FLIPPERS.left);
-    this.rightFlipper = new Flipper(CONFIG.FLIPPERS.right);
+    this.leftFlipper = new Flipper(CONFIG.FLIPPERS.left, assets.images.flipper);
+    this.rightFlipper = new Flipper(CONFIG.FLIPPERS.right, assets.images.flipper);
+    this.mascot = new Mascot(assets.images.player);
 
     // 系統與介面初始化
     this.particles = new ParticleSystem();
     this.hud = new HUD();
 
     this.input = new InputHandler({
-      onUserAction: () => this.ensureAudio(),
+      onUserAction: () => this.audio.unlock(),
+      onFlipperPress: (side) => {
+        this.audio.unlock();
+        this.audio.play('flipper', .3);
+        this.mascot.attack(side);
+      },
       onSpacePress: () => {
         if (!this.playing) this.resetGame();
       },
     });
 
     this.hud.bindRestart(() => {
-      this.ensureAudio();
+      this.audio.unlock();
       this.resetGame();
+    });
+
+    this.hud.bindAudioControls({
+      onMusic: () => this.audio.toggleMusic(),
+      onSfx: () => this.audio.toggleSfx(),
     });
 
     this.loop = new GameLoop(
@@ -77,45 +92,6 @@ export class Game {
     } catch {
       // 容錯機制
     }
-  }
-
-  ensureAudio() {
-    if (!this.audioContext) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) this.audioContext = new AudioContextClass();
-    }
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
-    }
-  }
-
-  playHitSound(multiplier) {
-    if (!this.audioContext) return;
-    const oscillator = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
-    const now = this.audioContext.currentTime;
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(CONFIG.AUDIO.HIT_BASE_FREQ + multiplier * CONFIG.AUDIO.HIT_MULT_FREQ, now);
-    gain.gain.setValueAtTime(0.055, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    oscillator.connect(gain).connect(this.audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + 0.08);
-  }
-
-  playGameOverSound() {
-    if (!this.audioContext) return;
-    const oscillator = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
-    const now = this.audioContext.currentTime;
-    oscillator.type = 'sawtooth';
-    oscillator.frequency.setValueAtTime(CONFIG.AUDIO.GAME_OVER_START_FREQ, now);
-    oscillator.frequency.exponentialRampToValueAtTime(CONFIG.AUDIO.GAME_OVER_END_FREQ, now + 0.35);
-    gain.gain.setValueAtTime(0.07, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    oscillator.connect(gain).connect(this.audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + 0.35);
   }
 
   triggerShake(magnitude, duration) {
@@ -146,7 +122,8 @@ export class Game {
     target.hit = 1;
     this.particles.spawn(target.x, target.y);
     this.triggerShake(6, 0.12);
-    this.playHitSound(multiplier);
+    this.audio.play('point', Math.min(.5, .28 + multiplier * .035));
+    this.mascot.attack(this.player.x < this.width / 2 ? 'left' : 'right');
     this.hud.updateScore(this.score, this.highScore);
     this.hud.updateStatus(this.combo, this.overdriveTimer);
   }
@@ -159,6 +136,7 @@ export class Game {
     this.overdriveTimer = 0;
     this.shakeTime = 0;
     this.shakeMagnitude = 0;
+    this.collisionSoundCooldown = 0;
     this.particles.reset();
 
     this.player.reset(CONFIG.BALL_INIT);
@@ -178,7 +156,7 @@ export class Game {
   endGame() {
     this.playing = false;
     this.loop.stop();
-    this.playGameOverSound();
+    this.audio.play('gameover', .5);
 
     if (this.score > this.highScore) {
       this.highScore = this.score;
@@ -210,6 +188,8 @@ export class Game {
 
     // 粒子系統更新
     this.particles.update(dt);
+    this.mascot.update(dt);
+    this.collisionSoundCooldown = Math.max(0, this.collisionSoundCooldown - dt);
 
     // 晃動倒數
     this.shakeTime = Math.max(0, this.shakeTime - dt);
@@ -235,7 +215,10 @@ export class Game {
       });
 
       this.posts.forEach(p => {
-        Physics.circleCollision(this.player, p, 0.94, false);
+        if (Physics.circleCollision(this.player, p, 0.94, false) && this.collisionSoundCooldown <= 0) {
+          this.audio.play('hit', .24);
+          this.collisionSoundCooldown = .09;
+        }
       });
 
       Physics.flipperCollision(this.player, this.leftFlipper, this.input.isLeftPressed(), false, isOverdrive);
@@ -265,6 +248,7 @@ export class Game {
     }
 
     this.drawBoard();
+    this.mascot.draw(this.ctx);
     this.bumpers.forEach(b => b.draw(this.ctx));
     this.posts.forEach(p => p.draw(this.ctx));
     this.leftFlipper.draw(this.ctx);
@@ -276,10 +260,8 @@ export class Game {
   }
 
   drawBoard() {
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, '#14243a');
-    gradient.addColorStop(1, '#0a1220');
-    this.ctx.fillStyle = gradient;
+    this.ctx.drawImage(this.assets.images.background, 0, 0, this.width, this.height);
+    this.ctx.fillStyle = 'rgba(2, 9, 18, .16)';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     this.ctx.strokeStyle = '#2c4665';

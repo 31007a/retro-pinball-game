@@ -2,10 +2,11 @@
  * 輸入管理器（鍵盤、觸控指標與視窗失焦防禦）
  */
 export class InputHandler {
-  constructor({ onUserAction, onSpacePress }) {
+  constructor({ onUserAction, onSpacePress, onFlipperPress }) {
     this.keys = { left: false, right: false };
     this.onUserAction = onUserAction;
     this.onSpacePress = onSpacePress;
+    this.onFlipperPress = onFlipperPress;
 
     this.leftButton = document.getElementById('leftButton');
     this.rightButton = document.getElementById('rightButton');
@@ -37,9 +38,11 @@ export class InputHandler {
     }
 
     if (event.code === 'ArrowLeft' || event.code === 'KeyA') {
+      if (down && !this.keys.left && this.onFlipperPress) this.onFlipperPress('left');
       this.keys.left = down;
     }
     if (event.code === 'ArrowRight' || event.code === 'KeyD') {
+      if (down && !this.keys.right && this.onFlipperPress) this.onFlipperPress('right');
       this.keys.right = down;
     }
   }
@@ -65,6 +68,7 @@ export class InputHandler {
         // 某些瀏覽器環境或未啟動 pointer 捕獲時略過
       }
       this.keys[side] = true;
+      if (this.onFlipperPress) this.onFlipperPress(side);
       button.classList.add('is-pressed');
     });
 

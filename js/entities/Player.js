@@ -4,11 +4,12 @@ import { Entity } from './Entity.js';
  * 玩家控制核心實體（彈珠 Ball）
  */
 export class Player extends Entity {
-  constructor(config = {}) {
+  constructor(config = {}, image = null) {
     super(config.x || 0, config.y || 0);
     this.vx = config.vx || 0;
     this.vy = config.vy || 0;
     this.r = config.r || 11;
+    this.image = image;
   }
 
   reset(config) {
@@ -26,6 +27,16 @@ export class Player extends Entity {
   }
 
   draw(ctx) {
+    if (this.image) {
+      const size = this.r * 2.65;
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.shadowColor = '#5cf7ff';
+      ctx.shadowBlur = 9;
+      ctx.drawImage(this.image, this.x - size / 2, this.y - size / 2, size, size);
+      ctx.restore();
+      return;
+    }
     const g = ctx.createRadialGradient(this.x - 4, this.y - 5, 2, this.x, this.y, this.r);
     g.addColorStop(0, '#ffffff');
     g.addColorStop(0.45, '#cfe3f8');
